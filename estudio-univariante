@@ -1,0 +1,102 @@
+from pandas import DataFrame
+from decimal import Decimal
+from tkinter import *
+from tkinter import messagebox
+from pandastable import Table
+        
+def algoritmo_estudio(estadistica_orden,k,a,b): #Algoritmo para crear la tabla de frecuencias
+    
+    #Estadisticas
+    dato_min = min(estadistica_orden) if a is None else Decimal(a)
+    dato_max = max(estadistica_orden) if b is None else Decimal(b)
+    
+    num_datos = len(estadistica_orden)
+    longitud_m = dato_max - dato_min
+    longitud_i = longitud_m/k
+    x = [68,71,77,83,79,72,74,57,67,69,50,60,70,66,76,70,84,59,75,94,65,72,85,79,71,83,84,74,82,97,77,73,78,81,79,90,83,80,84,91,101,86,93,92,102,80,69]
+    datos_agrupados = {}
+    intervalos = []; marca_clase = []
+
+    cortes = [dato_min + round(i*longitud_i,1) for i in range(k+1)]
+
+    #Creacion de los intervalos y marcas de clase
+    for i in range(1, k+1):
+        intervalos.append(f"[{round(cortes[i-1],1)}-{round(cortes[i],1)})") if i != k else intervalos.append(f"[{cortes[i-1]}-{cortes[i]}]")
+        marca_clase.append(round((cortes[i-1]+cortes[i])/2, 2))
+     
+    #Filtra datos por cada intervalo   
+    for i in range(1,len(cortes)):
+        intervalo=[]
+        for dato in estadistica_orden:
+            if dato >= cortes[i-1] and dato < cortes[i] or all((i == len(cortes)-1, dato == cortes[i])):
+                intervalo.append(dato) 
+        datos_agrupados[marca_clase[i-1]]=intervalo
+
+    #Frecuencias de los datos
+    frecuencia_absoluta = [len(dato) for dato in datos_agrupados.values()]
+    frecuencia_relativa = [round(freq/num_datos,2) for freq in frecuencia_absoluta]
+
+    frec_abs_acumulada = []; frec_rel_acumulada = []; sum_abs = sum_rel = 0
+    for i in range(k):
+        sum_abs+=frecuencia_absoluta[i]
+        sum_rel+=frecuencia_relativa[i]
+        frec_abs_acumulada.append(sum_abs)
+        frec_rel_acumulada.append(sum_rel)
+
+    tabla_frecuencia = {
+        'Intervalos': intervalos,
+        'Marca de clase': marca_clase,
+        'f\u1D62': frecuencia_absoluta,
+        'F\u1D62': frec_abs_acumulada,
+        'r\u1D62': frecuencia_relativa,
+        'R\u1D62': frec_rel_acumulada
+    }
+    
+    # print("\ndatos agrupados:", list(datos_agrupados.values()),end= "\n\n")
+    
+    return DataFrame(tabla_frecuencia)
+
+def main():
+    
+    #Obtener texto
+    def obtener_texto():
+        try:
+            estadistica_orden = list(map(Decimal, textBox.get().strip().split(',')))
+            k = int(textBox_k.get())
+            a = input("Ingrese el valor inferior (a) del intervalo [a,b]") or None
+            b = input("Ingrese el valor superior (b) del intervalo [a,b]") or None
+            df = algoritmo_estudio(estadistica_orden, k,a,b)
+        except Exception as er:
+            print("--ERROR: Formato incorrecto. Intente de nuevo--")
+            messagebox.showerror("ERROR",f"Error: {er.__class__.__name__}. Formato incorrecto. Intente de nuevo")
+        else:
+                 
+            pt = Table(f, dataframe=df,showtoolbar=0)
+            tkWindow.geometry('600x400')
+            pt.show()
+            pt.redraw()
+      
+    #Ventana principal  
+    tkWindow = Tk()
+    tkWindow.title("Estudio univariante")
+    tkWindow.geometry("500x130+200+100")
+    
+    # Tkinter Labels
+    Label(tkWindow, text="Ingrese un listado de numeros separados por comas").pack()
+    textBox = Entry(tkWindow, width=50)
+    textBox.pack()
+    Label(tkWindow, text="Ingrese el numero de intervalos").pack()
+    textBox_k = Entry(tkWindow,width=5)
+    textBox_k.pack()
+
+    f = Frame(tkWindow)
+    f.pack(fill=BOTH, expand=1)
+    
+    #Boton crear tabla
+    Button(tkWindow, text='Crear tabla', width=5, height=1,command=obtener_texto).pack()
+    tkWindow.mainloop()
+
+ 
+if __name__ == "__main__":
+    main()
+
